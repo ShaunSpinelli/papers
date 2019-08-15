@@ -4,20 +4,19 @@
 
 [Blog Post](https://ai.googleblog.com/2019/07/advancing-semi-supervised-learning-with.html)
 
-[Repository](https://github.com/google-research/uda)
+All code snippets taken from [Repository](https://github.com/google-research/uda)
 
 ## Overview
 
-## Findings
+### Key Findings
 
-1 - Matches and out performs supervised learning with less data
+1. Matches and out performs supervised learning with less data.
 
-2 - Works for both text and vision tasks
+2. Works for both text and vision tasks.
 
-3 - Combines well with transfer learning
+3. Combines well with transfer learning.
 
-
-## How it works
+## Components
 
 ###  Loss Function
 
@@ -25,12 +24,12 @@ This loss function is calculated is combining two loss functions one for the sup
  
 **Supervised Loss (Labelled Data)-**  Cross entropy loss
 
-**Unsupervised Consistencry Loss (Unlabelled Data)** more specifically KL divergence.
+**Unsupervised Consistency Loss (Unlabelled Data)** more specifically KL divergence, it is calculated between predicted distributions on the unlabeled examples and unlabeled augmented example.
 
 ```Python
 # uda/image/main.py
 
-# q_logits = augmented logits 
+# q_logits are the augmented logits 
 
 def _kl_divergence_with_logits(p_logits, q_logits):
     p = tf.nn.softmax(p_logits)
@@ -41,20 +40,21 @@ return kl
 
 ```
 
-KL divergence is calculated between predicted distributions on the unlabeled example and unlabeled augmented example. KL divergence works by.................
-
-
 ![loss function](./assets/4-Figure1-1.png)
 
 ## Augmentation Strategies
 
 Having diverse and valid augmentations are important..... why ?
 
-Image augmentation was done using  **AutoAugment** [Paper](https://ai.googleblog.com/2018/06/improving-deep-learning-performance.html) [Medium](https://towardsdatascience.com/how-to-improve-your-image-classifier-with-googles-autoaugment-77643f0be0c9) and **Cutout** [Paper](https://arxiv.org/abs/1708.04552) was also used for experiments with CIFAR-10 and SVHN. It is noted that there is a trade off between having diverse augmented training examples while at the same time keeping the ground truth label matched. Any augmented samples where created for one ground truth and were generated before training.
+Image augmentation was done using  **AutoAugment** [[Paper]](https://ai.googleblog.com/2018/06/improving-deep-learning-performance.html) [[Medium]](https://towardsdatascience.com/how-to-improve-your-image-classifier-with-googles-autoaugment-77643f0be0c9) and **Cutout** [[Paper]](https://arxiv.org/abs/1708.04552) was also used for experiments with CIFAR-10 and SVHN. It is noted that there is a trade off between having diverse augmented training examples while at the same time keeping the ground truth label matched. Many augmented samples where created for one ground truth and were all generated offline before training.
 
 Text augmentation was done using back translation and a process called TF-IDF.
 
 ![UDA Data augmentation](./assets/UDA-augmentation.png)
+
+**Results from ablation study on different augmentation strategies**
+
+![augmentation results](./assets/aug-results.png)
 
 
 ## Additional Training Techniques
@@ -73,7 +73,11 @@ There are three threshold schedules depending on the different ratios of labeled
 
 **linear-schedule** where the threshold is linearly increased while training.
 
-![training signal schedules](./assets/5-Figure2-1.png))
+![training signal schedules](./assets/5-Figure2-1.png)
+
+**Results from ablation study on different TSA schedules**
+
+![training signal results](./assets/tsa-results.png)
 
 
 ```Python
