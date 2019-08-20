@@ -6,25 +6,34 @@
 
 All code snippets taken from [Repository](https://github.com/google-research/uda)
 
-## Overview
+### Key Ideas and Findings
 
-### Key Findings
+- Improving classification models with unlabeled data, data augmentation and semi-supervised learning. 
 
-1. Matches and out performs supervised learning with less data.
+- Combining both labelled and unlabeled and using a custom loss function you can train a classifier for both computer vision and nlp problems.
 
-2. Works for both text and vision tasks.
+- Matches and outperforms supervised learning approaches with only a fraction of the data. 
 
-3. Combines well with transfer learning.
+### Key Results
+
+1 - Using CIFAR-10 with 4k examples, UDA achieves an error rate of 5.27, matching the performance of a fully supervised model that uses 50k examples
+
+2 - UDA achieves a new state-of-the-art error rate with a more than 45% reduction in error rate compared to the previous best semi-supervised result.
+
+3 - On SVHN, UDA achieves an error rate of 2.46 with only 1k labeled examples, matching the performance of the fully supervised model trained with ~70k labeled examples.
+
 
 ## Components
 
 ###  Loss Function
 
-This loss function is calculated is combining two loss functions one for the supervised part of the data (labelled) and one for the unsupervised part of the data (UDA). There is also a weighting factor (lamda) applied to the UDA loss function, researchers set (lamda) to 1 for most of their experiments.
+This loss function is calculated by combining two loss functions one for the supervised part of the data (labelled) and one for the unsupervised part of the data (UDA). There is also a weighting factor **λ** applied to the UDA loss function, researchers set **λ** to 1 for most of their experiments.
  
-**Supervised Loss (Labelled Data)-**  Cross entropy loss
+**Supervised Loss (Labelled Data)-**  Cross entropy
 
-**Unsupervised Consistency Loss (Unlabelled Data)** more specifically KL divergence, it is calculated between predicted distributions on the unlabeled examples and unlabeled augmented example.
+**Unsupervised Consistency Loss (Unlabelled Data)-** more specifically KL divergence, it is calculated between predicted distributions on the unlabeled examples and unlabeled augmented example.
+
+### Implementation of KL-divergence
 
 ```Python
 # uda/image/main.py
@@ -46,7 +55,7 @@ return kl
 
 Having diverse and valid augmentations are important..... why ?
 
-Image augmentation was done using  **AutoAugment** [[Paper]](https://ai.googleblog.com/2018/06/improving-deep-learning-performance.html) [[Medium]](https://towardsdatascience.com/how-to-improve-your-image-classifier-with-googles-autoaugment-77643f0be0c9) and **Cutout** [[Paper]](https://arxiv.org/abs/1708.04552) was also used for experiments with CIFAR-10 and SVHN. It is noted that there is a trade off between having diverse augmented training examples while at the same time keeping the ground truth label matched. Many augmented samples where created for one ground truth and were all generated offline before training.
+Image augmentation was done using  **AutoAugment** [[Paper]](https://ai.googleblog.com/2018/06/improving-deep-learning-performance.html) [[Medium]](https://towardsdatascience.com/how-to-improve-your-image-classifier-with-googles-autoaugment-77643f0be0c9) and **Cutout** [[Paper]](https://arxiv.org/abs/1708.04552) was also used for experiments with CIFAR-10 and SVHN. It is noted that there is a trade off between having diverse augmented training examples and at the same time keeping the ground truth label matched. Many augmented samples where created for one ground truth and were all generated offline before training.
 
 Text augmentation was done using back translation and a process called TF-IDF.
 
@@ -61,11 +70,11 @@ Text augmentation was done using back translation and a process called TF-IDF.
 
 ### Training Signal Annealing
 
-While training there is risk for the model to overfit to the labelled training data. To negate that researches used (TSA) with the idea being to *gradually release training signals of the labeled data without overfitting as the model is trained on more and more unlabeled examples.*
+By training on sch a small number of training samples there was a risk of the model overfitting to the labelled data. To negate that researches used (TSA) with the idea being to *gradually release training signals of the labeled data without overfitting as the model is trained on more and more unlabeled examples.*
 
-When the probability of the correct category is higher the some threshold (Nt) that example is removed from the loss calculation. This threshold prevents the model from from over-training on examples it is already confident on.
+When the probability of the correct category is higher the some threshold then that example is removed from the loss calculation. This threshold prevents the model from over-training on examples it is already confident on.
 
-There are three threshold schedules depending on the different ratios of labeled and unlabeled data.
+Three threshold schedules were suggested with the decision on which to use dependant on the different ratios of labeled and unlabeled data.
 
 **log-schedule** where threshold is increased most rapidly at the beginning of training. Used when the model is **less** likely to overfit because of abundance of labeled examples or effective regularizations in the model.
 
@@ -79,6 +88,7 @@ There are three threshold schedules depending on the different ratios of labeled
 
 ![training signal results](./assets/tsa-results.png)
 
+### Implementation of TSA
 
 ```Python
 # uda/image/main.py
@@ -96,13 +106,26 @@ def get_tsa_threshold(schedule, global_step, num_train_steps, start, end):
     # [1 - exp(0), 1 - exp(-5)] = [0, 0.99]
     coeff = 1 - tf.exp((-step_ratio) * scale)
   return coeff * (end - start) + start
+
+# Usage 
+# line 258
+ eff_train_prob_threshold = get_tsa_threshold(
+      FLAGS.tsa, global_step, FLAGS.train_steps,
+      tsa_start, end=1)
+
+# line 276
+ larger_than_threshold = tf.greater(
+      correct_label_probs, eff_train_prob_threshold)
+
 ```
 
 ### Sharpening Predictions
 
-- **Confidence-based masking** Predictions on the unlabelled and original data that the model is unsure about are masked and the loss is computed only on examples whose highest probability is higher then some threshold.
+- **Confidence-based masking** - If the predictions on the labelled data is below some confidence threshold then these predictions are removed from the final loss calculation, leaving only predictions with the highest confidence probabilities.
 
+### Implementation
 ```python
+
 # uda/image/main.py
 
 ori_prob = tf.nn.softmax(ori_logits, axis=-1)
@@ -121,4 +144,8 @@ aug_loss = aug_loss * loss_mask
 
 ### Domain-relevance Data filtering
 
-If the class distribution between the labeled and unlabeled data sets are unmatched it can hurt the performance of the model. To try and match the class distributions between the labeled and unlabeled data the model was trained on the labeled samples and used to infer the unlabeled samples class, examples that the model was most confident on where then used for training.
+If the class distribution between the labeled and unlabeled data sets are unmatched it can hurt the performance of the model. To try and match the class distributions between the labeled and unlabeled data a model was trained on the labeled samples and used to infer the unlabeled samples class. Examples that the model was most confident on where then used for training.
+
+### Comparison to current approaches
+
+![compare other apporaches](./assets/compare-results.png)
