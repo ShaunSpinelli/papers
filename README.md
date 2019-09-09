@@ -12,3 +12,5 @@ If I see a paper I like and think I can implemented it i'll will put it here.
 ## TODO
 
 [An Intriguing Failing of Convolutional Neural Networks and the CoordConv Solution](https://arxiv.org/abs/1807.03247)
+[CutMix: Regularization Strategy to Train Strong Classifiers
+with Localizable Features](https://arxiv.org/pdf/1905.04899.pdf)
