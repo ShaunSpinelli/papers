@@ -13,5 +13,8 @@ If I see a paper I like and think I can implemented it i'll will put it here.
 
 1. [An Intriguing Failing of Convolutional Neural Networks and the CoordConv Solution](https://arxiv.org/abs/1807.03247)
 
-2. [CutMix: Regularization Strategy to Train Strong Classifiers
-with Localizable Features](https://arxiv.org/pdf/1905.04899.pdf)
+2. [CutMix: Regularization Strategy to Train Strong Classifiers with Localizable Features](https://arxiv.org/pdf/1905.04899.pdf)
+
+3. [Focal Loss](https://arxiv.org/abs/1708.02002)
+
+4. [EfficientDet: Scalable and Efficient Object Detection](https://arxiv.org/abs/1911.09070)
